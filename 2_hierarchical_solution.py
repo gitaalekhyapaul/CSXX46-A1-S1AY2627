@@ -459,12 +459,50 @@ def generate_hierarchical(config: dict[str, Any]) -> HierarchicalProblem:
     # Add the exact preconditions and effects listed in Task 2. Do not add
     # extra guards such as start != end or not reached on unload.
 
+    move_elevator.add_precondition(Equals(at_elevator(move_elevator.elevator), move_elevator.start))
+    move_elevator.add_precondition(Not(elevator_door_open(move_elevator.elevator)))
+    move_elevator.add_effect(at_elevator(move_elevator.elevator), move_elevator.end)
+    # Here a new effect replaces the old one, so no need to delete effect
+
+    load.add_precondition(Equals(at_elevator(load.elevator), load.floor))
+    load.add_precondition(Equals(at_person(load.person), load.floor))
+    load.add_precondition(elevator_door_open(load.elevator))
+    load.add_precondition(lift_count(load.current))
+    load.add_precondition(next_count(load.current, load.next))
+    load.add_precondition(Not(reached(load.person)))
+    load.add_effect(at_person(load.person), load.elevator)
+    load.add_effect(lift_count(load.current), False)
+    load.add_effect(lift_count(load.next), True)
+
+    unload.add_precondition(Equals(at_elevator(unload.elevator), unload.floor))
+    unload.add_precondition(Equals(at_person(unload.person), unload.elevator))
+    unload.add_precondition(elevator_door_open(unload.elevator))
+    unload.add_precondition(Equals(destination(unload.person), unload.floor))
+    unload.add_precondition(lift_count(unload.current))
+    unload.add_precondition(next_count(unload.previous, unload.current))
+    unload.add_effect(at_person(unload.person), unload.floor)
+    unload.add_effect(reached(unload.person), True)
+    unload.add_effect(lift_count(unload.current), False)
+    unload.add_effect(lift_count(unload.previous), True)
+
+    open_door.add_precondition(Not(elevator_door_open(open_door.elevator)))
+    open_door.add_effect(elevator_door_open(open_door.elevator), True)
+    
+    close_door.add_precondition(elevator_door_open(close_door.elevator))
+    close_door.add_effect(elevator_door_open(close_door.elevator), False)
+    
     # COPY-FLAG-2-END
 
-    problem.add_actions([move_elevator, load, unload, open_door, close_door])
+    problem.add_actions(
+        [move_elevator, load, unload, open_door, close_door]
+    )
 
-    pickup_person = problem.add_task("pickup_person", person=Person, start_floor=Floor)
-    deliver_person = problem.add_task("deliver_person", person=Person, goal_floor=Floor)
+    pickup_person = problem.add_task(
+        "pickup_person", person=Person, start_floor=Floor
+    )
+    deliver_person = problem.add_task(
+        "deliver_person", person=Person, goal_floor=Floor
+    )
     confirm_reached = problem.add_task(
         "confirm_reached", person=Person, goal_floor=Floor
     )

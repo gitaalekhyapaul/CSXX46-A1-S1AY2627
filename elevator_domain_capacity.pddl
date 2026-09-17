@@ -44,38 +44,38 @@
 
   (:action load
     :parameters (?p - person ?l - level ?current ?next - count)
-    :precondition (and
-      (elevator_at ?l)
+    :precondition (and 
       (person_at ?p ?l)
+      (elevator_at ?l)
       (door_open ?l)
-      (not (reached ?p))
       (lift_count ?current)
       (next_count ?current ?next)
+      (not (reached ?p))
     )
     :effect (and
-      (not (person_at ?p ?l))
       (person_in_elevator ?p)
-      (not (lift_count ?current))
+      (not (person_at ?p ?l))
       (lift_count ?next)
+      (not (lift_count ?current))
     )
   )
 
   (:action unload
     :parameters (?p - person ?l - level ?previous ?current - count)
     :precondition (and
-      (elevator_at ?l)
       (person_in_elevator ?p)
+      (elevator_at ?l)
       (door_open ?l)
-      (destination ?p ?l)
       (lift_count ?current)
       (next_count ?previous ?current)
+      (destination ?p ?l)
     )
     :effect (and
-      (not (person_in_elevator ?p))
       (person_at ?p ?l)
-      (reached ?p)
-      (not (lift_count ?current))
+      (not (person_in_elevator ?p))
       (lift_count ?previous)
+      (not (lift_count ?current))
+      (reached ?p)
     )
   )
 )

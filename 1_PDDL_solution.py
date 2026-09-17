@@ -78,79 +78,83 @@ pddl_domain = """
   (:action move_up
     :parameters (?from ?to - level)
     :precondition (and
-      (elevator_at ?from)
-      (adjacent_up ?from ?to)
-      (not (door_open ?from))
-    )
+        (elevator_at ?from)
+        (not (door_open ?from))
+        (adjacent_up ?from ?to)
+    ) ; FILL IN the precondition for move_up with one or more predicates
     :effect (and
-      (not (elevator_at ?from))
-      (elevator_at ?to)
-    )
+        (not (elevator_at ?from))
+        (elevator_at ?to)
+    ) ; FILL IN the effect for move_up with one or more predicates
   )
 
   ; move_down: The elevator can only move down one level
   (:action move_down
     :parameters (?from ?to - level)
     :precondition (and
-      (elevator_at ?from)
-      (adjacent_down ?from ?to)
-      (not (door_open ?from))
-    )
+        (elevator_at ?from)
+        (not (door_open ?from))
+        (adjacent_down ?from ?to)
+    ) ; FILL IN the precondition for move_down with one or more predicates
     :effect (and
-      (not (elevator_at ?from))
-      (elevator_at ?to)
-    )
+        (not (elevator_at ?from))
+        (elevator_at ?to)
+    ) ; FILL IN the effect for move_down with one or more predicates
   )
 
   ; open_door: Open the door without considering picking up people
   (:action open_door
     :parameters (?l - level)
     :precondition (and
-      (elevator_at ?l)
-      (not (door_open ?l))
-    )
-    :effect (door_open ?l)
+        (elevator_at ?l)
+        (not (door_open ?l))
+    ) ; FILL IN the precondition for open_door with one or more predicates
+    :effect (and
+        (door_open ?l)
+    ) ; FILL IN the effect for open_door with one or more predicates
   )
 
   ; close_door: Close the door
   (:action close_door
     :parameters (?l - level)
     :precondition (and
-      (elevator_at ?l)
-      (door_open ?l)
-    )
-    :effect (not (door_open ?l))
+        (elevator_at ?l)
+        (door_open ?l)
+    ) ; FILL IN the precondition for close_door with one or more predicates
+    :effect (and
+        (not (door_open ?l))
+    ) ; FILL IN the effect for close_door with one or more predicates
   )
 
   ; load: Pick up a person, requires the door to be open and the elevator to be empty
   (:action load
     :parameters (?p - person ?l - level)
     :precondition (and
-      (elevator_at ?l)
-      (person_at ?p ?l)
-      (door_open ?l)
-      (elevator_empty)
-    )
+        (person_at ?p ?l)
+        (elevator_at ?l)
+        (door_open ?l)
+        (elevator_empty)
+    ) ; FILL IN the precondition for load with one or more predicates
     :effect (and
-      (person_in_elevator ?p)
-      (not (person_at ?p ?l))
-      (not (elevator_empty))
-    )
+        (person_in_elevator ?p)
+        (not (person_at ?p ?l))
+        (not (elevator_empty))
+    ) ; FILL IN the effect for load with one or more predicates
   )
 
   ; unload: Drop off a person, requires the door to be open and the person to be in the elevator
   (:action unload
     :parameters (?p - person ?l - level)
     :precondition (and
-      (person_in_elevator ?p)
-      (elevator_at ?l)
-      (door_open ?l)
-    )
+        (person_in_elevator ?p)
+        (elevator_at ?l)
+        (door_open ?l)
+    ) ; FILL IN the precondition for unload with one or more predicates
     :effect (and
-      (not (person_in_elevator ?p))
-      (person_at ?p ?l)
-      (elevator_empty)
-    )
+        (person_at ?p ?l)
+        (not (person_in_elevator ?p))
+        (elevator_empty)
+    ) ; FILL IN the effect for unload with one or more predicates
   )
 )
 """
@@ -205,16 +209,8 @@ def validate_config(config):
 
 # COPY-FLAG-2-START
 
-
 def generate_pddl_from_config(config, output_file):
-    """Generate one PDDL problem from the validated configuration.
-
-    ``config["requests"][i]`` is ``(start_floor, goal_floor)`` for
-    ``person{i + 1}``. Multiple people may share a start or goal, and a
-    person's start may already equal their goal.
-    """
     validate_config(config)
-
     num_levels = config["num_levels"]
     elevator_start = config["elevator_start"]
     requests = config["requests"]
@@ -222,7 +218,6 @@ def generate_pddl_from_config(config, output_file):
 
     pddl = "(define (problem elevator_problem)\n"
     pddl += "  (:domain elevator)\n"
-
     levels = " ".join(f"level{i}" for i in range(num_levels))
     pddl += "  (:objects\n"
     pddl += f"    {levels} - level\n"
@@ -231,34 +226,23 @@ def generate_pddl_from_config(config, output_file):
     pddl += "  )\n\n"
 
     pddl += "  (:init\n"
-    pddl += f"    (elevator_at level{elevator_start})\n"  # Use config["elevator_start"]
+    pddl += f"    (elevator_at level{elevator_start})\n"  # Use elevator_start
     pddl += "    (elevator_empty)\n"
-
     for person, (start, _goal) in zip(persons, requests):
         pddl += f"    (person_at {person} level{start})\n"  # Place person at start
-
     for floor in range(num_levels - 1):
-        pddl += f"    (adjacent_up level{floor} level{floor+1})\n"  # Upward adjacency
-        pddl += (
-            f"    (adjacent_down level{floor+1} level{floor})\n"  # Downward adjacency
-        )
+        pddl += f"    (adjacent_up level{floor} level{floor + 1})\n"  # Upward adjacency
+        pddl += f"    (adjacent_down level{floor + 1} level{floor})\n"  # Downward adjacency
     pddl += "  )\n\n"
 
-    pddl += "  (:goal\n"
-    pddl += "    (and\n"
+    pddl += "  (:goal\n    (and\n"
     for person, (_start, goal) in zip(persons, requests):
-        pddl += (
-            f"      (person_at {person} level{goal})\n"  # Place person at their goal
-        )
-    pddl += "    )\n"
-    pddl += "  )\n"
-    pddl += ")"
+        pddl += f"      (person_at {person} level{goal})\n"  # Place person at their goal
+    pddl += "    )\n  )\n)"
 
     with open(output_file, "w", encoding="utf-8") as file:
         file.write(pddl)
-
     return pddl
-
 
 # COPY-FLAG-2-END
 
@@ -324,38 +308,38 @@ pddl_domain_capacity = """
 
   (:action load
     :parameters (?p - person ?l - level ?current ?next - count)
-    :precondition (and
-      (elevator_at ?l)
+    :precondition (and 
       (person_at ?p ?l)
+      (elevator_at ?l)
       (door_open ?l)
-      (not (reached ?p))
       (lift_count ?current)
       (next_count ?current ?next)
+      (not (reached ?p))
     )
     :effect (and
-      (not (person_at ?p ?l))
       (person_in_elevator ?p)
-      (not (lift_count ?current))
+      (not (person_at ?p ?l))
       (lift_count ?next)
+      (not (lift_count ?current))
     )
   )
 
   (:action unload
     :parameters (?p - person ?l - level ?previous ?current - count)
     :precondition (and
-      (elevator_at ?l)
       (person_in_elevator ?p)
+      (elevator_at ?l)
       (door_open ?l)
-      (destination ?p ?l)
       (lift_count ?current)
       (next_count ?previous ?current)
+      (destination ?p ?l)
     )
     :effect (and
-      (not (person_in_elevator ?p))
       (person_at ?p ?l)
-      (reached ?p)
-      (not (lift_count ?current))
+      (not (person_in_elevator ?p))
       (lift_count ?previous)
+      (not (lift_count ?current))
+      (reached ?p)
     )
   )
 )
@@ -370,7 +354,6 @@ def generate_capacity_pddl_domain(output_file="elevator_domain_capacity.pddl"):
 
 
 # COPY-FLAG-4-START
-
 
 def generate_capacity_pddl_from_config(config, output_file):
     validate_capacity_config(config)
