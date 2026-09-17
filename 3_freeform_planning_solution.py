@@ -1,20 +1,20 @@
 """Assignment 1 - Problem 3 bonus free-form planning template.
 
 * Group Member 1:
-    - Name:
-    - Matric number:
+    - Name: Song Yuqiao
+    - Matric number: A0332068H
 
 * Group Member 2:
-    - Name:
-    - Matric number:
+    - Name: Zhu Hao
+    - Matric number: A0211201L
 
 * Group Member 3:
-    - Name:
-    - Matric number:
+    - Name: Lim Zi Qiang
+    - Matric number: A0297855E
 
 * Group Member 4:
-    - Name:
-    - Matric number:
+    - Name: Paul Gita Alekhya
+    - Matric number: A0328476R
 
 Problem 3 uses exactly the same passenger schema, batching protocol, timing
 model, and utility objective as Problem 2. Only the implementation method is
@@ -43,7 +43,11 @@ def validate_config(config: dict[str, Any]) -> None:
     elevator_start = config["elevator_start"]
     capacity = config["capacity"]
     requests = config["requests"]
-    if not isinstance(num_levels, int) or isinstance(num_levels, bool) or num_levels < 1:
+    if (
+        not isinstance(num_levels, int)
+        or isinstance(num_levels, bool)
+        or num_levels < 1
+    ):
         raise ValueError("num_levels must be a positive integer")
     if (
         not isinstance(elevator_start, int)
@@ -93,21 +97,17 @@ def validate_order(config: dict[str, Any], order: Sequence[int]) -> list[int]:
     return [int(x) for x in values]
 
 
-def service_batches(
-    config: dict[str, Any], order: Sequence[int]
-) -> list[list[int]]:
+def service_batches(config: dict[str, Any], order: Sequence[int]) -> list[list[int]]:
     """Filter initially reached passengers and form deterministic batches."""
     order = validate_order(config, order)
     active = [
         index
         for index in order
-        if config["requests"][index]["start"]
-        != config["requests"][index]["goal"]
+        if config["requests"][index]["start"] != config["requests"][index]["goal"]
     ]
     capacity = config["capacity"]
     return [
-        active[start : start + capacity]
-        for start in range(0, len(active), capacity)
+        active[start : start + capacity] for start in range(0, len(active), capacity)
     ]
 
 
@@ -141,8 +141,7 @@ def evaluate_service_order(
         max(
             0,
             request["base_utility"]
-            - request["late_penalty"]
-            * max(0, time - request["deadline"]),
+            - request["late_penalty"] * max(0, time - request["deadline"]),
         )
         for request, time in zip(config["requests"], completion)
     ]
@@ -160,6 +159,7 @@ def evaluate_service_order(
 
 # COPY-FLAG-1-START
 
+
 def choose_service_order(config: dict[str, Any]) -> list[int]:
     """Return every passenger index exactly once.
 
@@ -170,6 +170,7 @@ def choose_service_order(config: dict[str, Any]) -> list[int]:
     validate_config(config)
     return list(range(len(config["requests"])))
 
+
 # COPY-FLAG-1-END
 
 
@@ -179,10 +180,20 @@ def main() -> None:
         "elevator_start": 2,
         "capacity": 2,
         "requests": [
-            {"start": 0, "goal": 4, "deadline": 16,
-             "base_utility": 100, "late_penalty": 8},
-            {"start": 3, "goal": 1, "deadline": 12,
-             "base_utility": 80, "late_penalty": 12},
+            {
+                "start": 0,
+                "goal": 4,
+                "deadline": 16,
+                "base_utility": 100,
+                "late_penalty": 8,
+            },
+            {
+                "start": 3,
+                "goal": 1,
+                "deadline": 12,
+                "base_utility": 80,
+                "late_penalty": 12,
+            },
         ],
     }
     order = choose_service_order(config)
