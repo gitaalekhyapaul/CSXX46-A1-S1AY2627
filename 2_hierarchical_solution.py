@@ -512,6 +512,110 @@ def generate_hierarchical(config: dict[str, Any]) -> HierarchicalProblem:
     # Add the five methods using the exact signatures, preconditions, and
     # ordered decompositions listed in Task 3.
 
+    # Pickup from another floor: move, open, load, close.
+    method = Method(
+        "method_pickup_from_other_floor",
+        elevator=Elevator, person=Person, elevator_floor=Floor,
+        start_floor=Floor, current=Count, next=Count,
+    )
+    method.set_task(pickup_person, method.person, method.start_floor)
+    method.add_precondition(Equals(at_person(method.person), method.start_floor))
+    method.add_precondition(Equals(at_elevator(method.elevator), method.elevator_floor))
+    method.add_precondition(Not(Equals(method.elevator_floor, method.start_floor)))
+    method.add_precondition(Not(elevator_door_open(method.elevator)))
+    method.add_precondition(lift_count(method.current))
+    method.add_precondition(next_count(method.current, method.next))
+    method.add_precondition(Not(reached(method.person)))
+    move = method.add_subtask(
+        move_elevator, method.elevator, method.elevator_floor, method.start_floor
+    )
+    opening = method.add_subtask(open_door, method.elevator)
+    loading = method.add_subtask(
+        load, method.elevator, method.person, method.start_floor,
+        method.current, method.next,
+    )
+    closing = method.add_subtask(close_door, method.elevator)
+    method.set_ordered(move, opening, loading, closing)
+    problem.add_method(method)
+
+    # Pickup on the current floor needs no movement.
+    method = Method(
+        "method_pickup_from_current_floor",
+        elevator=Elevator, person=Person, start_floor=Floor,
+        current=Count, next=Count,
+    )
+    method.set_task(pickup_person, method.person, method.start_floor)
+    method.add_precondition(Equals(at_person(method.person), method.start_floor))
+    method.add_precondition(Equals(at_elevator(method.elevator), method.start_floor))
+    method.add_precondition(Not(elevator_door_open(method.elevator)))
+    method.add_precondition(lift_count(method.current))
+    method.add_precondition(next_count(method.current, method.next))
+    method.add_precondition(Not(reached(method.person)))
+    opening = method.add_subtask(open_door, method.elevator)
+    loading = method.add_subtask(
+        load, method.elevator, method.person, method.start_floor,
+        method.current, method.next,
+    )
+    closing = method.add_subtask(close_door, method.elevator)
+    method.set_ordered(opening, loading, closing)
+    problem.add_method(method)
+
+    # Delivery to another floor: move, open, unload, close.
+    method = Method(
+        "method_deliver_to_other_floor",
+        elevator=Elevator, person=Person, elevator_floor=Floor,
+        goal_floor=Floor, previous=Count, current=Count,
+    )
+    method.set_task(deliver_person, method.person, method.goal_floor)
+    method.add_precondition(Equals(at_person(method.person), method.elevator))
+    method.add_precondition(Equals(destination(method.person), method.goal_floor))
+    method.add_precondition(Equals(at_elevator(method.elevator), method.elevator_floor))
+    method.add_precondition(Not(Equals(method.elevator_floor, method.goal_floor)))
+    method.add_precondition(Not(elevator_door_open(method.elevator)))
+    method.add_precondition(lift_count(method.current))
+    method.add_precondition(next_count(method.previous, method.current))
+    move = method.add_subtask(
+        move_elevator, method.elevator, method.elevator_floor, method.goal_floor
+    )
+    opening = method.add_subtask(open_door, method.elevator)
+    unloading = method.add_subtask(
+        unload, method.elevator, method.person, method.goal_floor,
+        method.previous, method.current,
+    )
+    closing = method.add_subtask(close_door, method.elevator)
+    method.set_ordered(move, opening, unloading, closing)
+    problem.add_method(method)
+
+    # Delivery on the current floor needs no movement.
+    method = Method(
+        "method_deliver_at_current_floor",
+        elevator=Elevator, person=Person, goal_floor=Floor,
+        previous=Count, current=Count,
+    )
+    method.set_task(deliver_person, method.person, method.goal_floor)
+    method.add_precondition(Equals(at_person(method.person), method.elevator))
+    method.add_precondition(Equals(destination(method.person), method.goal_floor))
+    method.add_precondition(Equals(at_elevator(method.elevator), method.goal_floor))
+    method.add_precondition(Not(elevator_door_open(method.elevator)))
+    method.add_precondition(lift_count(method.current))
+    method.add_precondition(next_count(method.previous, method.current))
+    opening = method.add_subtask(open_door, method.elevator)
+    unloading = method.add_subtask(
+        unload, method.elevator, method.person, method.goal_floor,
+        method.previous, method.current,
+    )
+    closing = method.add_subtask(close_door, method.elevator)
+    method.set_ordered(opening, unloading, closing)
+    problem.add_method(method)
+
+    # Already completed requests only need verification, with no actions.
+    method = Method("method_confirm_reached", person=Person, goal_floor=Floor)
+    method.set_task(confirm_reached, method.person, method.goal_floor)
+    method.add_precondition(reached(method.person))
+    method.add_precondition(Equals(at_person(method.person), method.goal_floor))
+    method.add_precondition(Equals(destination(method.person), method.goal_floor))
+    problem.add_method(method)
+
     # COPY-FLAG-3-END
 
     # COPY-FLAG-4-START
@@ -519,6 +623,31 @@ def generate_hierarchical(config: dict[str, Any]) -> HierarchicalProblem:
     # Filter initially reached passengers, split the remaining order into
     # capacity-sized batches, add all pickups followed by all deliveries for
     # each batch, append confirm_reached tasks, and totally order the network.
+
+    requests = config["requests"]
+    active = [i for i in order if requests[i]["start"] != requests[i]["goal"]]
+    completed = [i for i in order if requests[i]["start"] == requests[i]["goal"]]
+    subtasks = []
+
+    # Filter before batching so completed requests never occupy a batch slot.
+    for offset in range(0, len(active), config["capacity"]):
+        batch = active[offset : offset + config["capacity"]]
+        for i in batch:
+            subtasks.append(problem.task_network.add_subtask(
+                pickup_person, people[i], floors[requests[i]["start"]]
+            ))
+        for i in batch:
+            subtasks.append(problem.task_network.add_subtask(
+                deliver_person, people[i], floors[requests[i]["goal"]]
+            ))
+
+    # Keep initially completed passengers in their relative policy order.
+    for i in completed:
+        subtasks.append(problem.task_network.add_subtask(
+            confirm_reached, people[i], floors[requests[i]["goal"]]
+        ))
+
+    problem.task_network.set_ordered(*subtasks)
 
     # COPY-FLAG-4-END
 
