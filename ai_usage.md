@@ -10,10 +10,10 @@
 
 | No. | Student Name | Matric Number |
 |:---:|:---|:---|
-| 1 | [Student 1 Name] | A0XXXXXX |
-| 2 | [Student 2 Name] | A0XXXXXX |
-| 3 | [Student 3 Name] | A0XXXXXX |
-| 4 | [Student 4 Name] | A0XXXXXX |
+| 1 | Song Yuqiao | A0332068H |
+| 2 | Zhu Hao | A0211201L |
+| 3 | Lim Zi Qiang | A0297855E |
+| 4 | Paul Gita Alekhya | A0328476R |
 
 ---
 
@@ -22,7 +22,7 @@
 *Please select one of the options below by marking `[x]`:*
 
 - [ ] **No Generative AI was used** for any part of this assignment.
-- [ ] **Generative AI was used** in accordance with NUS guidelines and course policies. Details, logs, and verification notes are documented below.
+- [x] **Generative AI was used** in accordance with NUS guidelines and course policies. Details, logs, and verification notes are documented below.
 
 ---
 
