@@ -27,8 +27,10 @@
 ---
 
 ## 3. Summary of AI Tools Used
+- Used Codex to help debug code, interpret error messages, and suggest fixes.
+- Used AI to generate a wide range of test cases, including random inputs and edge cases.
+- Used AI to suggest and implement improvements to the Q3 planning algorithm, and compare the revised solution against the baseline.
 
-[You may declare how AI tools were used here.]
 
 ---
 
