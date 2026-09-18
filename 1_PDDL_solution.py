@@ -35,25 +35,69 @@ optional_ai_audit_notes = r"""
    Assumption or invariant examined:
    Smallest counterexample tested:
    Revision made, if any:
+   (Left for the team member who drafted with AI assistance; ungraded.)
 
 2. Fragment 1 (loading while the door may be closed)
-   Violated invariant:
-   Concrete counterexample:
-   Smallest repair:
+   Violated invariant: a passenger may cross between a floor and the car only
+     through an open door, so load must require (door_open ?l). The fragment
+     checks only elevator_at, person_at and elevator_empty.
+   Concrete counterexample: num_levels = 2, elevator_start = 0,
+     requests = [(0, 1)]. The correct domain needs 6 actions (open_door, load,
+     close_door, move_up, open_door, unload). The fragment solves it in 4
+     (load, move_up, open_door, unload), boarding person1 at level0 with the
+     door never opened at all.
+   Smallest repair: add (door_open ?l) to the precondition.
 
 3. Fragment 2 (incorrect movement effect)
-   Violated invariant:
-   Concrete counterexample:
-   Smallest repair:
+   Violated invariant: exactly one elevator_at fact holds at a time, and
+     move_up must transfer it from ?from to ?to. The fragment deletes
+     (elevator_at ?to), which was already false, and asserts
+     (elevator_at ?from), which was already true, so the action is a no-op and
+     the lift never actually moves.
+   Concrete counterexample: num_levels = 2, elevator_start = 0,
+     requests = [(1, 0)]. elevator_at(level1) is then unreachable, so the
+     planner returns no plan at all; the correct domain solves it in 7 actions.
+   Smallest repair: swap the two literals, giving
+     (and (not (elevator_at ?from)) (elevator_at ?to)).
 
 4. Fragment 3 (using each passenger's start as the goal)
-   Violated invariant:
-   Concrete counterexample:
-   Smallest repair:
+   Violated invariant: the goal must say where each passenger has to end up,
+     i.e. (person_at ?p level{goal}). Emitting level{start} turns the goal into
+     a restatement of the initial state.
+   Concrete counterexample: num_levels = 3, elevator_start = 0,
+     requests = [(2, 0)]. The goal becomes person_at(person1, level2), which
+     :init already asserts, so the empty 0-action plan is accepted and the
+     passenger is never carried anywhere; the correct goal needs 9 actions.
+     Planner success is therefore no evidence of a correct model, which is why
+     the emitted :objects, :init and :goal sections have to be inspected
+     directly.
+   Smallest repair: use goal rather than start in the goal loop.
 
 5. Capacity extension
    Why the unload count-link direction decrements occupancy:
+     next_count(a, b) is a static fact meaning b = a + 1. unload holds
+     lift_count(?current) and requires next_count(?previous, ?current), which
+     pins ?previous = ?current - 1, so moving the marker to ?previous lowers
+     occupancy by exactly one. Writing next_count(?current, ?previous) instead
+     pins ?previous = ?current + 1, so a passenger leaving would raise the
+     count. Tested with the link flipped: capacity 1 is unsolvable outright,
+     because at c1 no next_count(c1, ?) link exists to unload along. Capacity 2
+     and 3 still solve a single-passenger instance, but become unsolvable from
+     the second passenger onwards, since the first delivery strands the counter
+     at the top of the chain and no further load can fire. The fault is
+     therefore silent on the smallest instance and only surfaces once two
+     passengers must be served, which is why regression cases matter.
    What can happen if load omits (not (reached ?p)):
+     No action ever deletes reached, so a delivered passenger can board again.
+     Tested on num_levels = 3, elevator_start = 0, capacity = 1,
+     requests = [(0, 0), (2, 0)], where person1 starts on its destination and
+     is reached initially: with the guard removed, the sequence that delivers
+     person2 and then loads the already-reached person1 runs to completion and
+     the goal is satisfied while person1 is sitting inside the car. reached
+     then means only "was delivered at some point", not "is at the destination
+     now", so the goal state stops implying that every passenger is where they
+     belong. It also wastes a capacity slot and enlarges the search space. With
+     the guard present, that re-boarding load is not applicable.
 """
 
 
