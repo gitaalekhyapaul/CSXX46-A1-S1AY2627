@@ -15,6 +15,9 @@
 * Group Member 4:
     - Name: Paul Gita Alekhya
     - Matric number: A0328476R
+
+* Collaborators: None
+* Sources: None
 """
 
 from __future__ import annotations

@@ -16,6 +16,9 @@
     - Name: Paul Gita Alekhya
     - Matric number: A0328476R
 
+* Collaborators: None
+* Sources: None
+
 Problem 3 uses exactly the same passenger schema, batching protocol, timing
 model, and utility objective as Problem 2. Only the implementation method is
 free: no HTN representation is required. The Python standard library, NumPy,

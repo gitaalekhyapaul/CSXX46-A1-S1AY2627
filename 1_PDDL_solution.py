@@ -16,6 +16,9 @@ Assignment 1 - Problem 1 PDDL submission template.
 * Group Member 4:
     - Name: Paul Gita Alekhya
     - Matric number: A0328476R
+
+* Collaborators: None
+* Sources: None
 """
 
 ### AFTER YOU COMPLETE 1_PDDL.ipynb, COPY THE MARKED SECTIONS HERE ###
